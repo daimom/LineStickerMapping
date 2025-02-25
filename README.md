@@ -1,2 +1,13 @@
-# LineStickerMapping
-use keyword mapping line sticker
+# 簡介
+
+你有因為貼圖太多，要用時找不到貼圖的煩惱嗎？
+比照傳統的MSN（用過的就知道）
+搜尋你mac位置的貼圖，
+自己新增別名，
+當需要時搜尋關鍵字，就能找出你要的圖。
+
+## Future
+
+1. 先掃一輪，把購買的貼圖id存sqlite。
+2. 新增alias
+3. 搜尋 顯示

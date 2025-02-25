@@ -18,8 +18,8 @@ import (
 
 type ProductInfo struct {
 	PackageID int `json:"packageId"`
-	titles    []struct {
-		title string `json:"zh-Hant"`
+	Titles    struct {
+		ZhHant string `json:"zh-Hant"`
 	} `json:"title"`
 	Stickers []struct {
 		ID int `json:"id"`
@@ -65,11 +65,11 @@ func parseFile(db *sql.DB, filePath string) {
 	}
 	var products []Product
 	fmt.Printf("File: %s\nPackage ID: %d\n", filePath, info.PackageID)
-	fmt.Printf("title: %s\n", info.titles[0].title)
+	fmt.Printf("title: %s\n", info.Titles.ZhHant)
 	fmt.Print("Stickers IDs: ")
 	for _, sticker := range info.Stickers {
 		fmt.Printf("%d ", sticker.ID)
-		products = append(products, Product{info.PackageID, info.titles[0].title, sticker.ID})
+		products = append(products, Product{info.PackageID, info.Titles.ZhHant, sticker.ID})
 	}
 	fmt.Println("\n--------------------")
 	insertData(db, &products)
@@ -99,7 +99,7 @@ func initDatabase(dbPath string) (*sql.DB, error) {
 		packageId INTEGER NOT NULL,
 		title TEXT NOT NULL,
 		stickerSn INTEGER NOT NULL,
-		stickerId INTEGER NOT NULL,
+		stickerId INTEGER NOT NULL
 	);`
 
 	_, err = db.Exec(createTableSQL)
