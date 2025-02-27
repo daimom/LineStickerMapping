@@ -6,12 +6,15 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type Product struct {
-	PackageID int
-	title     string
-	stickerId int
+	PackageID  int
+	folderpath string
+	title      string
+	stickerId  int
+	stickerSn  int
 }
 
 type ProductInfo struct {
@@ -34,14 +37,16 @@ func searchAndParseFiles(root string) (*[]Product, error) {
 			return nil
 		}
 		if d.Name() == "productInfo.meta" {
-			parsedProducts, err := parseFile(path)
+			folderPath := strings.ReplaceAll(path, "productInfo.meta", "")
+			parsedProducts, err := parseFile(path, folderPath)
 			if err != nil {
-				return fmt.Errorf("Error search %v", err)
+				return fmt.Errorf("error search %v", err)
 			}
 			products = append(products, *parsedProducts...) // 追加到產品列表
 
 			return nil
 		}
+
 		return nil
 	})
 
@@ -51,23 +56,25 @@ func searchAndParseFiles(root string) (*[]Product, error) {
 	return &products, err
 }
 
-func parseFile(filePath string) (*[]Product, error) {
+func parseFile(filePath string, folderPath string) (*[]Product, error) {
 	file, err := os.ReadFile(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("Error reading file:%s: %v", filePath, err)
+		return nil, fmt.Errorf("error reading file:%s: %v", filePath, err)
 	}
 
 	var info ProductInfo
 	if err := json.Unmarshal(file, &info); err != nil {
-		return nil, fmt.Errorf("Error parsing JSON:%s: %v", filePath, err)
+		return nil, fmt.Errorf("error parsing JSON:%s: %v", filePath, err)
 	}
 	var products []Product
 	fmt.Printf("File: %s\nPackage ID: %d\n", filePath, info.PackageID)
 	fmt.Printf("title: %s\n", info.Titles.ZhHant)
 	fmt.Print("Stickers IDs: ")
+	sn := 1
 	for _, sticker := range info.Stickers {
 		fmt.Printf("%d ", sticker.ID)
-		products = append(products, Product{info.PackageID, info.Titles.ZhHant, sticker.ID})
+		products = append(products, Product{info.PackageID, folderPath, info.Titles.ZhHant, sticker.ID, sn})
+		sn++
 	}
 	fmt.Println("\n--------------------")
 	return &products, nil

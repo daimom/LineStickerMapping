@@ -8,6 +8,9 @@
 
 ## Future
 
-1. 先掃一輪，把購買的貼圖id存sqlite。
-2. 新增alias
-3. 搜尋 顯示
+1. (init)先掃一輪，把購買的貼圖id存sqlite。
+2. 顯示所有縮圖
+3. 新增alias
+4. 搜尋 顯示
+5. 新增貼圖時，更新stickers
+6. browser按鈕，一開始直接點選取得貼圖根目錄，將路徑直接塞到db

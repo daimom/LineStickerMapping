@@ -11,11 +11,11 @@ func initDatabase(dbPath string) (*sql.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("無法開啟資料庫: %v", err)
 	}
-
 	// 創建表格
 	createTableSQL := `
 	CREATE TABLE IF NOT EXISTS stickers (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		folderpath TEXT NOU NULL,
 		packageId INTEGER NOT NULL,
 		title TEXT NOT NULL,
 		stickerSn INTEGER NOT NULL,
