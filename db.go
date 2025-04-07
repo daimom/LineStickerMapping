@@ -104,34 +104,92 @@ func insertData(products *[]Product) {
 
 	log.Println("Batch insert completed.")
 }
+func readAlias(stickerId string) *[]string {
 
-// func insertAlias(stickers string) {
+	// 查詢 stickers 資料表中的 folderpath 欄位
+	rows, err := db.Query("SELECT alias FROM alias where stickerId=?", stickerId)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
 
-// 	// 使用 Transaction 提高效能
-// 	tx, err := db.Begin()
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
+	var aliasLists []string
+	// 遍歷查詢結果
+	for rows.Next() {
+		var alias string
+		if err := rows.Scan(&alias); err != nil {
+			log.Fatal(err)
+		}
+		aliasLists = append(aliasLists, alias)
 
-// 	stmt, err := tx.Prepare(`INSERT INTO alias (stickerId,alias)
-// 				VALUES (? , ?)`)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	defer stmt.Close()
+	}
 
-// 	for _, p := range *products {
-// 		_, err = stmt.Exec(p.PackageID, p.folderpath, p.title, p.stickerSn, p.stickerId)
-// 		if err != nil {
-// 			log.Fatal(err)
-// 		}
-// 	}
+	// 檢查查詢過程中的錯誤
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return &aliasLists
+}
+func deleteAlias(stickerId string) error {
+	// 使用 Transaction 提高效能
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
 
-// 	// 提交事務
-// 	err = tx.Commit()
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
+	stmt, err := tx.Prepare(`delete from alias where stickerId=?`)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer stmt.Close()
 
-// 	log.Println("Batch insert completed.")
-// }
+	_, err = stmt.Exec(stickerId)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to execute statement for stickerId %s: %w", stickerId, err)
+	}
+
+	// 提交事務
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+func insertAlias(stickers *[]Sticker) error {
+
+	// 使用 Transaction 提高效能
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+
+	stmt, err := tx.Prepare(`INSERT INTO alias (stickerId,alias)
+				VALUES (? , ?)`)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	var lastStickerId string
+	for _, p := range *stickers {
+		lastStickerId = p.StickerId
+		_, err = stmt.Exec(p.StickerId, p.Alias)
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to execute statement for stickerId %s: %w", p.StickerId, err)
+		}
+	}
+
+	// 提交事務
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	log.Printf("Alias %s insert completed.", lastStickerId)
+	return nil
+}

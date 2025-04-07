@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -63,7 +64,7 @@ func LoadImages(imageLists []ImageInfo, parent fyne.App) []fyne.CanvasObject {
 		img.FillMode = canvas.ImageFillOriginal
 
 		openButton := widget.NewButton("檢視", func() {
-			time.AfterFunc(100*time.Millisecond, func() {
+			time.AfterFunc(200*time.Millisecond, func() {
 				ShowImageWindow(values.FolderPath, title, parent)
 			})
 
@@ -89,7 +90,7 @@ func ShowImageWindow(imagePath string, title string, parent fyne.App) {
 		img.FillMode = canvas.ImageFillOriginal
 
 		aliasButton := widget.NewButton("alias", func() {
-			time.AfterFunc(100*time.Millisecond, func() {
+			time.AfterFunc(200*time.Millisecond, func() {
 				ShowAliasWindow(fulPath, parent)
 			})
 		})
@@ -105,6 +106,11 @@ func ShowImageWindow(imagePath string, title string, parent fyne.App) {
 	w.Show()
 }
 
+type Sticker struct {
+	StickerId string
+	Alias     string
+}
+
 // 顯示Alias視窗
 func ShowAliasWindow(filePath string, parent fyne.App) {
 	p := strings.Split(filePath, "/")
@@ -118,12 +124,40 @@ func ShowAliasWindow(filePath string, parent fyne.App) {
 
 	// Get sticker alias
 	input := widget.NewEntry()
-	input.SetPlaceHolder("Enter values, separated by commas.")
+	aliasList := readAlias(stickerId)
+	if len(*aliasList) == 0 {
+		input.SetPlaceHolder("Enter values, separated by commas.")
+	} else {
+		input.Text = (strings.Join(*aliasList, ","))
+	}
 
 	insertButton := widget.NewButton("新增", func() {
 		fmt.Print(stickerId)
 		//insert sticker alias
-		//ShowImageWindow(values.FolderPath, title, parent)
+		inputText := input.Text
+		stickers := parseInput(inputText, stickerId)
+		// // 顯示解析後的結構
+		// for _, sticker := range stickers {
+		// 	fmt.Printf("StickerId: %s, Alias: %s\n", sticker.StickerId, sticker.Alias)
+		// }
+		err := deleteAlias(stickerId)
+		if err != nil {
+			dialog.NewError(err, w).Show()
+			return // 錯誤發生後，直接返回，停止繼續執行下面的程式碼
+		}
+		err2 := insertAlias(&stickers)
+		if err2 != nil {
+			// 若出現錯誤，顯示錯誤訊息並不關閉視窗
+			dialog.NewError(err2, w).Show()
+		} else {
+			// 如果成功，顯示提示框後關閉視窗
+			dialog.NewInformation("提示", "新增完成！", w).Show()
+
+			go func() {
+				<-time.After(2 * time.Second) // 延遲 2 秒後關閉視窗
+				w.Close()                     // 關閉視窗
+			}()
+		}
 	})
 
 	top := container.NewCenter(img)
@@ -133,4 +167,21 @@ func ShowAliasWindow(filePath string, parent fyne.App) {
 	w.Resize(fyne.NewSize(400, 400))
 	w.Show()
 
+}
+
+// parseInput 解析輸入的字串，並返回 Sticker struct 陣列
+func parseInput(input string, strickerId string) []Sticker {
+	var stickers []Sticker
+	// 拆分輸入的字串，假設每個 sticker 的 stickerId 和 alias 由 ',' 隔開
+	entries := strings.Split(input, ",")
+
+	// 檢查每對 stickerId 和 alias
+	for _, p := range entries {
+		sticker := Sticker{
+			StickerId: strickerId, // 去除空格
+			Alias:     strings.TrimSpace(p),
+		}
+		stickers = append(stickers, sticker)
+	}
+	return stickers
 }
