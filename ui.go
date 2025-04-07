@@ -20,13 +20,15 @@ func CreateUI(w fyne.App) fyne.CanvasObject {
 		update()
 	})
 
-	searchBtn := widget.NewButton("搜尋", func() {
-		fmt.Println("搜尋")
-	})
-
 	// 文字框
 	textbox := widget.NewEntry()
 	textbox.SetPlaceHolder("Enter Keyword...")
+
+	searchBtn := widget.NewButton("搜尋", func() {
+		imageLists := readKeyword(textbox.Text)
+
+		fmt.Println("搜尋：", textbox.Text)
+	})
 
 	// 頂部按鈕
 	loadButton := widget.NewButton("載入圖片", func() {

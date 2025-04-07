@@ -38,6 +38,34 @@ func read_packageID() *[]ImageInfo {
 	}
 	return &imageLists
 }
+func readKeyword(keyword string) *[]ImageInfo {
+
+	// 查詢 stickers 資料表中的 folderpath 欄位
+	rows, err := db.Query(`select concat(stickers.folderpath,stickers.stickerId,"_key@2x.png"),stickers.title
+from  stickers  inner join alias on stickers.stickerId = alias.stickerId
+where alias.alias like '%?%'`, keyword)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var imageLists []ImageInfo
+	// 遍歷查詢結果
+	for rows.Next() {
+		var filePath, title string
+		if err := rows.Scan(&filePath, &title); err != nil {
+			log.Fatal(err)
+		}
+		imageLists = append(imageLists, ImageInfo{FolderPath: filePath, Title: title})
+
+	}
+
+	// 檢查查詢過程中的錯誤
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return &imageLists
+}
 
 func read_stickerID(packageId string) *[]string {
 
