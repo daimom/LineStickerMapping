@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -62,7 +63,10 @@ func LoadImages(imageLists []ImageInfo, parent fyne.App) []fyne.CanvasObject {
 		img.FillMode = canvas.ImageFillOriginal
 
 		openButton := widget.NewButton("檢視", func() {
-			ShowImageWindow(values.FolderPath, title, parent)
+			time.AfterFunc(100*time.Millisecond, func() {
+				ShowImageWindow(values.FolderPath, title, parent)
+			})
+
 		})
 
 		// 圖片和按鈕組合
@@ -85,7 +89,9 @@ func ShowImageWindow(imagePath string, title string, parent fyne.App) {
 		img.FillMode = canvas.ImageFillOriginal
 
 		aliasButton := widget.NewButton("alias", func() {
-			ShowAliasWindow(fulPath, parent)
+			time.AfterFunc(100*time.Millisecond, func() {
+				ShowAliasWindow(fulPath, parent)
+			})
 		})
 		// 圖片和按鈕組合
 		images = append(images, container.NewVBox(img, aliasButton))
@@ -126,4 +132,5 @@ func ShowAliasWindow(filePath string, parent fyne.App) {
 	w.SetContent(container.NewBorder(top, bottom, nil, nil, input))
 	w.Resize(fyne.NewSize(400, 400))
 	w.Show()
+
 }
