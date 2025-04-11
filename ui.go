@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 	"time"
 
@@ -26,8 +29,12 @@ func CreateUI(w fyne.App) fyne.CanvasObject {
 
 	searchBtn := widget.NewButton("搜尋", func() {
 		imageLists := readKeyword(textbox.Text)
+		imagesContainer.Objects = nil
 
-		fmt.Println("搜尋：", textbox.Text)
+		grid := container.NewGridWithColumns(3, LoadImages(*imageLists, w)...)
+		imagesContainer.Objects = []fyne.CanvasObject{grid}
+		imagesContainer.Refresh()
+		// fmt.Println("搜尋：", textbox.Text)
 	})
 
 	// 頂部按鈕
@@ -36,11 +43,11 @@ func CreateUI(w fyne.App) fyne.CanvasObject {
 		imagesContainer.Objects = nil
 
 		grid := container.NewGridWithColumns(3, LoadImages(*imageLists, w)...)
+
 		imagesContainer.Objects = []fyne.CanvasObject{grid}
 		// imagesContainer.Objects = LoadImages(*imagePaths, w)
 		imagesContainer.Refresh()
 	})
-
 	// 頂部按鈕排版
 	buttonContainer := container.NewGridWithColumns(4, updateBtn, loadButton, textbox, searchBtn)
 
@@ -57,22 +64,35 @@ func CreateUI(w fyne.App) fyne.CanvasObject {
 // 根據圖片路徑載入圖片
 func LoadImages(imageLists []ImageInfo, parent fyne.App) []fyne.CanvasObject {
 	var images []fyne.CanvasObject
-	var path, title string
+	// var path, title string
 	for _, values := range imageLists {
-		path = values.FolderPath + "tab_on@2x.png"
-		title = values.Title
+		path := values.FolderPath + "tab_on@2x.png"
+		// title = values.Title + "\n(檢視)"
+		title := values.Title + "\n(檢視)"
 
+		isCgBI, err := IsCgBIPng(path)
+		if err != nil {
+			fmt.Println("Error checking PNG:", err)
+		}
+
+		if isCgBI {
+			fmt.Println("[跳過] CgBI PNG:", title)
+			path = "none.png"
+			title = values.Title + "\n(無法讀取)"
+		}
 		img := canvas.NewImageFromFile(path)
 		img.FillMode = canvas.ImageFillOriginal
 
-		openButton := widget.NewButton("檢視", func() {
-			time.AfterFunc(200*time.Millisecond, func() {
-				ShowImageWindow(values.FolderPath, title, parent)
-			})
-
+		openButton := widget.NewButton(title, func() {
+			if path != "none.png" {
+				time.AfterFunc(200*time.Millisecond, func() {
+					ShowImageWindow(values.FolderPath, title, parent)
+				})
+			}
 		})
 
 		// 圖片和按鈕組合
+
 		images = append(images, container.NewVBox(img, openButton))
 	}
 	return images
@@ -87,11 +107,21 @@ func ShowImageWindow(imagePath string, title string, parent fyne.App) {
 	var images []fyne.CanvasObject
 	w := parent.NewWindow("檢視圖片")
 	for _, val := range *stickerLists {
+
+		//取得stickerId 的 alias
+		var alias string
+		aliasList := readAlias(val)
+		if len(*aliasList) == 0 {
+			alias = "alias"
+		} else {
+			alias = (strings.Join(*aliasList, ","))
+		}
+
 		fulPath := imagePath + val + "_key@2x.png"
 		img := canvas.NewImageFromFile(fulPath)
 		img.FillMode = canvas.ImageFillOriginal
 
-		aliasButton := widget.NewButton("alias", func() {
+		aliasButton := widget.NewButton(alias, func() {
 			time.AfterFunc(200*time.Millisecond, func() {
 				ShowAliasWindow(fulPath, parent)
 			})
@@ -134,7 +164,7 @@ func ShowAliasWindow(filePath string, parent fyne.App) {
 	}
 
 	insertButton := widget.NewButton("新增", func() {
-		fmt.Print(stickerId)
+		// fmt.Print(stickerId)
 		//insert sticker alias
 		inputText := input.Text
 		stickers := parseInput(inputText, stickerId)
@@ -186,4 +216,36 @@ func parseInput(input string, strickerId string) []Sticker {
 		stickers = append(stickers, sticker)
 	}
 	return stickers
+}
+
+// 因四葉妹妹無法讀取，檢查後發現該系列為CgBI格式，直接排除
+func IsCgBIPng(path string) (bool, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return false, err
+	}
+	defer file.Close()
+
+	header := make([]byte, 8)
+	_, err = io.ReadFull(file, header)
+	if err != nil {
+		return false, err
+	}
+
+	if !bytes.Equal(header, []byte{137, 80, 78, 71, 13, 10, 26, 10}) {
+		return false, fmt.Errorf("not a PNG file")
+	}
+
+	chunkHeader := make([]byte, 8)
+	_, err = io.ReadFull(file, chunkHeader)
+	if err != nil {
+		return false, err
+	}
+
+	chunkType := string(chunkHeader[4:])
+	if chunkType == "CgBI" {
+		return true, nil
+	}
+
+	return false, nil
 }

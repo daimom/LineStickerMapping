@@ -13,7 +13,7 @@ type ImageInfo struct {
 func read_packageID() *[]ImageInfo {
 
 	// 查詢 stickers 資料表中的 folderpath 欄位
-	rows, err := db.Query("SELECT distinct folderpath,title FROM stickers limit 20")
+	rows, err := db.Query("SELECT distinct folderpath,title FROM stickers ")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -39,11 +39,11 @@ func read_packageID() *[]ImageInfo {
 	return &imageLists
 }
 func readKeyword(keyword string) *[]ImageInfo {
-
+	keyword = "%" + keyword + "%"
 	// 查詢 stickers 資料表中的 folderpath 欄位
-	rows, err := db.Query(`select concat(stickers.folderpath,stickers.stickerId,"_key@2x.png"),stickers.title
-from  stickers  inner join alias on stickers.stickerId = alias.stickerId
-where alias.alias like '%?%'`, keyword)
+	rows, err := db.Query(`select distinct stickers.folderpath,stickers.title 
+from  stickers  inner join alias on stickers.stickerId = alias.stickerId 
+where alias.alias like ?`, keyword)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -70,7 +70,7 @@ where alias.alias like '%?%'`, keyword)
 func read_stickerID(packageId string) *[]string {
 
 	// 查詢 stickers 資料表中的 folderpath 欄位
-	rows, err := db.Query("SELECT stickerId FROM stickers where packageId=?", packageId)
+	rows, err := db.Query(`SELECT stickerId FROM stickers where packageId=?`, packageId)
 	if err != nil {
 		log.Fatal(err)
 	}
