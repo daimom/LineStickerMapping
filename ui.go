@@ -12,11 +12,12 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 )
 
 // 建立主 UI
-func CreateUI(w fyne.App) fyne.CanvasObject {
+func CreateUI(w fyne.Window) fyne.CanvasObject {
 	var imagesContainer *fyne.Container
 
 	updateBtn := widget.NewButton("更新資料", func() {
@@ -48,8 +49,40 @@ func CreateUI(w fyne.App) fyne.CanvasObject {
 		// imagesContainer.Objects = LoadImages(*imagePaths, w)
 		imagesContainer.Refresh()
 	})
+
+	inputFolder := widget.NewEntry()
+	inputFolder.SetPlaceHolder("MAC預設位置：/Users/daimom/Library/Group Containers/VUTU7AKEUR.jp.naver.line.mac/Real/Library/Data/Sticker/")
+
+	// selectedPathLabel := widget.NewLabel("MAC預設位置：")
+	// selectedPathLabel.Wrapping = fyne.TextWrapWord
+	//指定label大小
+	// labelContainer := container.New(
+	// 	layout.NewGridWrapLayout(fyne.NewSize(500, 60)),
+	// 	inputFolder,
+	// )
+
+	browseBtn := widget.NewButton("選擇資料夾", func() {
+		dialog.NewFolderOpen(func(folder fyne.ListableURI, err error) {
+			if err != nil {
+				dialog.ShowError(err, w)
+				return
+			}
+			if folder == nil {
+				return // 使用者按取消
+			}
+			inputFolder.SetText(folder.Path())
+		}, w).Show()
+	})
+
 	// 頂部按鈕排版
 	buttonContainer := container.NewGridWithColumns(4, updateBtn, loadButton, textbox, searchBtn)
+
+	topContainer := container.NewVBox(
+		container.NewHBox(
+			container.New(layout.NewGridWrapLayout(fyne.NewSize(600, 40)), inputFolder),
+			layout.NewSpacer(),
+			container.NewStack(browseBtn)),
+		buttonContainer)
 
 	// 圖片列表
 	imagesContainer = container.NewVBox()
@@ -58,11 +91,11 @@ func CreateUI(w fyne.App) fyne.CanvasObject {
 	scroll := container.NewVScroll(imagesContainer)
 
 	// 主界面佈局
-	return container.NewBorder(buttonContainer, nil, nil, nil, scroll)
+	return container.NewBorder(topContainer, nil, nil, nil, scroll)
 }
 
 // 根據圖片路徑載入圖片
-func LoadImages(imageLists []ImageInfo, parent fyne.App) []fyne.CanvasObject {
+func LoadImages(imageLists []ImageInfo, parent fyne.Window) []fyne.CanvasObject {
 	var images []fyne.CanvasObject
 	// var path, title string
 	for _, values := range imageLists {
@@ -99,13 +132,13 @@ func LoadImages(imageLists []ImageInfo, parent fyne.App) []fyne.CanvasObject {
 }
 
 // 顯示新視窗
-func ShowImageWindow(imagePath string, title string, parent fyne.App) {
+func ShowImageWindow(imagePath string, title string, parent fyne.Window) {
 	p := strings.Split(imagePath, "/")
 	packageID := p[len(p)-2] //path 為 /abc/abc/123/ ，故-2
 	stickerLists := read_stickerID(packageID)
 
 	var images []fyne.CanvasObject
-	w := parent.NewWindow("檢視圖片")
+	w := fyne.CurrentApp().NewWindow("檢視圖片")
 	for _, val := range *stickerLists {
 
 		//取得stickerId 的 alias
@@ -144,12 +177,12 @@ type Sticker struct {
 }
 
 // 顯示Alias視窗
-func ShowAliasWindow(filePath string, parent fyne.App) {
+func ShowAliasWindow(filePath string, parent fyne.Window) {
 	p := strings.Split(filePath, "/")
 	fileName := p[len(p)-1] //path 為 /abc/abc/123/ ，故-2
 	stickerId := strings.ReplaceAll(fileName, "_key@2x.png", "")
 
-	w := parent.NewWindow("新增別名")
+	w := fyne.CurrentApp().NewWindow("新增別名")
 
 	img := canvas.NewImageFromFile(filePath)
 	img.FillMode = canvas.ImageFillOriginal

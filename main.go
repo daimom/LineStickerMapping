@@ -30,7 +30,7 @@ func main() {
 	myWindow.Resize(fyne.NewSize(800, 600))
 
 	// 設定視窗的內容
-	myWindow.SetContent(CreateUI(myApp))
+	myWindow.SetContent(CreateUI(myWindow))
 
 	// 顯示視窗
 	myWindow.ShowAndRun()

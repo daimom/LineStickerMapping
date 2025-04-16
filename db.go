@@ -99,6 +99,7 @@ func update() {
 	if err != nil {
 		fmt.Printf("Error search: %v\n", err)
 	}
+	checkDuplicate(products)
 	insertData(products)
 }
 
@@ -109,7 +110,7 @@ func insertData(products *[]Product) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	// duplicate
 	stmt, err := tx.Prepare(`INSERT INTO stickers (packageId,folderPath, title, stickerSn, stickerId) 
 				VALUES (?,?, ?, ?, ?)`)
 	if err != nil {
@@ -131,6 +132,65 @@ func insertData(products *[]Product) {
 	}
 
 	log.Println("Batch insert completed.")
+}
+func checkDuplicate(products *[]Product) {
+
+	// 宣告 空結構體
+	packageIDSet := make(map[int]struct{})
+	for _, p := range *products {
+		packageIDSet[p.PackageID] = struct{}{}
+	}
+
+	// 將 map 轉成 slice
+	var packageIDs []int
+	for pkg := range packageIDSet {
+		packageIDs = append(packageIDs, pkg)
+	}
+
+	if len(packageIDs) == 0 {
+		return
+	}
+
+	// 構造 SQL 查詢 (IN 條件式)
+	query := "SELECT DISTINCT packageId FROM stickers WHERE packageId IN ("
+	args := make([]interface{}, len(packageIDs))
+	for i, id := range packageIDs {
+		query += "?"
+		if i < len(packageIDs)-1 {
+			query += ","
+		}
+		args[i] = id
+	}
+	query += ")"
+
+	// 執行查詢
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		log.Fatalf("查詢 package_id 發生錯誤: %v", err)
+	}
+	defer rows.Close()
+
+	// 把 DB 存在的 packageId 存起來
+	existsMap := make(map[int]bool)
+	for rows.Next() {
+		var pkgID int
+		if err := rows.Scan(&pkgID); err != nil {
+			log.Fatalf("掃描 package_id 發生錯誤: %v", err)
+		}
+		existsMap[pkgID] = true
+	}
+
+	// 過濾 products：只留下那些 package_id 沒在 existsMap 裡的
+	filtered := (*products)[:0] // in-place 過濾，建立空的slice(可避免重新分配記憶體)
+	for _, p := range *products {
+		if !existsMap[p.PackageID] {
+			filtered = append(filtered, p)
+		} else {
+			fmt.Printf("刪除 PackageID: %d, StickerID: %d\n", p.PackageID, p.stickerId)
+		}
+	}
+
+	*products = filtered
 }
 func readAlias(stickerId string) *[]string {
 
