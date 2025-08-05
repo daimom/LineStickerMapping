@@ -39,7 +39,7 @@ func CreateUI(w fyne.Window) fyne.CanvasObject {
 	})
 
 	// 頂部按鈕
-	loadButton := widget.NewButton("載入圖片", func() {
+	loadButton := widget.NewButton("載入全圖片", func() {
 		imageLists := read_packageID()
 		imagesContainer.Objects = nil
 

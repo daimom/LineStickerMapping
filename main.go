@@ -8,8 +8,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/canvas"
-	"fyne.io/fyne/v2/container"
 )
 
 var BasePath = "/Users/daimom/Library/Group Containers/VUTU7AKEUR.jp.naver.line.mac/Real/Library/Data/Sticker/"
@@ -35,20 +33,4 @@ func main() {
 	// 顯示視窗
 	myWindow.ShowAndRun()
 
-}
-
-// 開啟圖片顯示的視窗
-func openImageWindow(myApp fyne.App, imagePath string) {
-	// 新視窗
-	imageWindow := myApp.NewWindow("Image Viewer")
-
-	// 顯示圖片
-	img := canvas.NewImageFromFile(imagePath)
-	img.FillMode = canvas.ImageFillOriginal
-
-	// 顯示圖片
-	imageWindow.SetContent(container.NewCenter(img))
-
-	// 顯示圖片視窗
-	imageWindow.Show()
 }
